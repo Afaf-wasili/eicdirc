@@ -71,8 +71,8 @@ PrtReco::PrtReco(TString infile, TString lutfile, TString pdffile,
     fp1 = 4;
   }
 
-  fResiduals =
-      new TH1F("residuals", ";residuals;entries [#]", 500, 0, 80);
+  //  fResiduals =
+  //  new TH1F("residuals", ";residuals;entries [#]", 500, 0, 80);
   fTimeDiff = new TH2F("timediff", ";measured time [ns];t_{meas}-t_{calc} [ns]",
                        500, 0, 100, 150, -5, 5);
   fTimeProp =
@@ -121,9 +121,17 @@ PrtReco::PrtReco(TString infile, TString lutfile, TString pdffile,
   for (int h = 0; h < 5; h++) {
     hthetac[h] = new TH1F(Form("thetac_%d", h), ";#theta_{C} [rad];entries [#]",
                           200, 0.75, 0.9);
+
+     hthetac_ti[h] = new TH1F(Form("thetac_%d", h), ";#theta_{C} [rad];entries [#]",
+                          200, 0.75, 0.9);
     hthetacd[h] =
         new TH1F(Form("thetacd_%d", h), ";#Delta#theta_{C} [mrad];entries [#]",
                  200, -60, 60);
+
+ hthetacd_ti[h] =
+        new TH1F(Form("thetacd_%d", h), ";#Delta#theta_{C} [mrad];entries [#]",
+                 200, -60, 60);
+
     hnph_gr[h] = new TH1F(Form("nph_gr_%d", h),
                           ";detected photons [#];entries [#]", 220, 0, 220);
     hnph_ti[h] = new TH1F(Form("nph_ti_%d", h),
@@ -134,6 +142,8 @@ PrtReco::PrtReco(TString infile, TString lutfile, TString pdffile,
     int c = ft.color(h);
     hthetac[h]->SetLineColor(c);
     hthetacd[h]->SetLineColor(c);
+    hthetac_ti[h]->SetLineColor(c);
+    hthetacd_ti[h]->SetLineColor(c);
     hnph_gr[h]->SetLineColor(c);
     hnph_ti[h]->SetLineColor(c);
     fFunc[h]->SetLineColor(c);
@@ -333,7 +343,7 @@ void PrtReco::Run(int start, int end) {
 
   TString outFile = PrtManager::Instance()->getOutName();
   double cangle[5] = {0}, spr[5] = {0}, trr[5] = {0}, nph_gr[5] = {0},
-         nph_gr_err[5] = {0}, nph_ti[5] = {0}, nph_ti_err[5] = {0}, par5(0),
+    nph_gr_err[5] = {0}, nph_ti[5] = {0},nph_ti_err[5] = {0}, par5(0),
          par6(0), ctimeRes(0), trackRes(0), test1(0), test2(0), test3(0),
          sep_gr(0), sep_gr_err(0), sep_ti(0), sep_ti_err(0), sep_nn(0),
          sep_nn_err(0), epi_rejection1(0), epi_rejection2(0), epi_rejection3(0),
@@ -378,7 +388,7 @@ void PrtReco::Run(int start, int end) {
     fChain->GetEntry(ievent);
     // theta = (fEvent->getMomentum().Angle(TVector3(0, 0, -1))) *
     // TMath::RadToDeg();
-
+    
     int pid = fEvent->getPid();
 
     if (ievent % 1000 == 0)
@@ -578,16 +588,17 @@ void PrtReco::Run(int start, int end) {
         nph_gr_err[h] = f->GetParError(1);
       }
 
-      if (hnph_ti[h]->Integral() < 20)
+       if (hnph_ti[h]->Integral() < 20)
         continue;
       hnph_ti[h]->Fit("gaus", "SQ", "", 5, 250);
       f = hnph_ti[h]->GetFunction("gaus");
       if (f) {
         nph_ti[h] = f->GetParameter(1);
         nph_ti_err[h] = f->GetParError(1);
-      }
-    }
+	}
 
+
+    }
     TF1 *ff;
     double m1 = 0, m2 = 0, s1 = 100, s2 = 100, dm1 = 0, dm2 = 0, ds1 = 0,
            ds2 = 0;
@@ -893,22 +904,42 @@ void PrtReco::Run(int start, int end) {
         Form("_%d_%1.2f_%1.4f_%1.2f", fp1, frun->getTheta(), test1, mom);
     TGaxis::SetMaxDigits(3);
 
+
+    
     { // cherenkov angle
       ft.add_canvas("tangle" + nid, 800, 400);
-      ft.normalize(hthetac, 5);
+      //      ft.normalize(hthetac, 5);
 
       hthetac[fp1]->SetTitle(Form("theta %1.2f", fTheta));
       hthetac[fp1]->Draw("");
       hthetac[fp2]->Draw("same");
       drawTheoryLines(mom);
+ 
+      ft.add_canvas("tangle_ti" + nid, 800, 400);
+      ft.normalize(hthetac_ti, 5);
 
-      // ft.add_canvas("tangled" + nid, 800, 400);
-      // ft.normalize(hthetacd, 5);
-      // hthetacd[fp2]->SetTitle(Form("theta %1.2f", fTheta));
-      // hthetacd[fp2]->Draw("");
-      // hthetacd[fp1]->Draw("same");
+      hthetac_ti[fp1]->SetTitle(Form("theta %1.2f", fTheta));
+      hthetac_ti[fp1]->Draw();
+      hthetac_ti[fp2]->Draw("same");
+      drawTheoryLines(mom);
+
+      
+      ft.add_canvas("tangled" + nid, 800, 400);
+       ft.normalize(hthetacd, 5);
+       hthetacd[fp2]->SetTitle(Form("theta %1.2f", fTheta));
+       hthetacd[fp2]->Draw("");
+       hthetacd[fp1]->Draw("same");
+
+       ft.add_canvas("tangled_ti" + nid, 800, 400);
+       ft.normalize(hthetacd, 5);
+       hthetacd_ti[fp2]->SetTitle(Form("theta %1.2f", fTheta));
+       hthetacd_ti[fp2]->Draw("");
+       hthetacd_ti[fp1]->Draw("same");
+       
     }
-
+                                                                                                                                                               
+    
+    
     { // nph
       ft.add_canvas("nph" + nid, 800, 400);
       ft.normalize(hnph_gr, 5);
@@ -916,9 +947,12 @@ void PrtReco::Run(int start, int end) {
       hnph_gr[fp1]->Draw();
       hnph_gr[fp2]->Draw("same");
 
+
+      
       hnph_ti[fp1]->Draw("same");
       hnph_ti[fp2]->Draw("same");
     }
+
 
     { // sep
       fLnDiffGr[fp1]->SetStats(0);
@@ -1111,6 +1145,9 @@ void PrtReco::Run(int start, int end) {
   // delete fTime; // abort now to save time (for small pixels)
 }
 
+
+
+
 void PrtReco::FindPeak(double (&cangle)[5], double (&spr)[5]) {
   for (int h = 0; h < 5; h++) {
     spr[h] = 0;
@@ -1137,8 +1174,7 @@ void PrtReco::FindPeak(double (&cangle)[5], double (&spr)[5]) {
       spr[h] = fFit->GetParameter(2) * 1000;
       if (fVerbose > 2)
         gROOT->SetBatch(0);
-    }
-  }
+    }  }
 }
 
 void glob_circleFcn(int &, double *, double &f, double *par, int) {
@@ -1362,16 +1398,15 @@ double PrtReco::CalcRejection(TH1F *h1, TH1F *h2, double eff) {
   return id / misid;
 }
 
-void PrtReco::geom_reco(PrtEvent *event, TVector3 mom, bool ringfit) {
 
+void PrtReco::geom_reco(PrtEvent *event, TVector3 mom, bool ringfit) {
   double sum1(0), sum2(0), noise(0.2);
   double evtime, bartime, len, lenz, tdiff, tangle, luttheta, luttime;
   int nph(0), pid = event->getPid();
 
   for (auto hit : event->getHits()) {
-
     double hittime = hit.getLeadTime() + gRandom->Gaus(0, fTimeRes);
-    double hittime_nc = hittime;
+    double hittime_nc = hittime;  // Non-corrected hit time
     double dirz = hit.getMomentum().Z();
 
     int mcp = hit.getPmt();
@@ -1416,29 +1451,9 @@ void PrtReco::geom_reco(PrtEvent *event, TVector3 mom, bool ringfit) {
 
     bool isGoodHit_gr(false);
 
-    // double fAngle =  event->GetAngle()-90;
-    // TVector3 mom = momInBar;
-    // mom.RotateY(-fAngle/180.*TMath::Pi());
-    // std::cout<<"fAngle   "<<fAngle <<std::endl;
-    // mom.Print();
-
-    Long_t hpath = hit.getPathInPrizm();
-    TString spath = Form("%ld", hpath);
-    // if(spath.Length()>8) continue;
-    // if(!spath.EqualTo("87")) continue;
-    // if(spath.Contains("1")) continue;
-
     for (int i = 0; i < size; i++) {
       dird = node->GetEntry(i);
       evtime = node->GetTime(i);
-
-      Long_t lpath = node->GetPathId(i);
-      // TString slpath = Form("%ld", lpath);
-      bool ipath = (hpath == lpath) ? 1 : 0;
-      // if(!slpath.Contains("4")) continue;
-      // if(!ipath) continue;
-      // if(lpath!=387) continue;
-      // if(node->GetNRefl(i)>8) continue;
 
       for (int u = 0; u < 4; u++) {
         if (u == 0)
@@ -1451,8 +1466,7 @@ void PrtReco::geom_reco(PrtEvent *event, TVector3 mom, bool ringfit) {
           dir.SetXYZ(-dird.X(), -dird.Y(), dird.Z());
         if (reflected)
           dir.SetXYZ(dir.X(), dir.Y(), -dir.Z());
-        if (dir.Angle(fnX1) < fCriticalAngle ||
-            dir.Angle(fnY1) < fCriticalAngle)
+        if (dir.Angle(fnX1) < fCriticalAngle || dir.Angle(fnY1) < fCriticalAngle)
           continue;
 
         luttheta = dir.Theta();
@@ -1463,23 +1477,16 @@ void PrtReco::geom_reco(PrtEvent *event, TVector3 mom, bool ringfit) {
         bartime = len / 199.5; // 198.5
         luttime = bartime + evtime;
         tdiff = hittime - luttime;
+
+        // Calculate tangle with corrections directly
         tangle = mom.Angle(dir);
+        tangle += cor[mcp].ca; // per-PMT angle correction
 
-        double residuals = (tangle - fAngle[pid]);
-        fResiduals->Fill(residuals);
 
-        if (!ringfit) {
-          fTimeProp->Fill(hittime);
-          fTimeDiffR[reflected]->Fill(tdiff);
-          if (ipath)
-            fTimeDiffR[2]->Fill(tdiff);
+        // Apply chromatic correction
+        if (fabs(tdiff) < 2 && fPhysList < 10) {
+          tangle -= fChromCor->Eval(fTheta) * (hittime_nc - luttime) / len;
         }
-
-        tangle += cor[mcp].ca; // per-PMT angle correction;
-
-        if (fabs(tdiff) < 2 && fPhysList < 10)
-          tangle -= fChromCor->Eval(fTheta) * (hittime_nc - luttime) /
-                    len; // chromatic correction
 
         if (fabs(tdiff) > fTimeCut + luttime * 0.035)
           continue;
@@ -1488,28 +1495,19 @@ void PrtReco::geom_reco(PrtEvent *event, TVector3 mom, bool ringfit) {
           double chringcut = 0.005;
           if (frun->getTrackingResTheta() > 0.002)
             chringcut = 0.01;
-          if (fabs(tangle - fAngle[fp2]) > chringcut &&
-              fabs(tangle - fAngle[fp1]) > chringcut)
+          if (fabs(tangle - fAngle[fp2]) > chringcut && fabs(tangle - fAngle[fp1]) > chringcut)
             continue;
 
           TVector3 rdir = TVector3(-dir.X(), dir.Y(), dir.Z());
-          // rdir.RotateX(0.004);
-          // rdir.Rotate(1.57 + TMath::PiOver2(), mom);
-
           rdir.RotateUz(mom);
           double cphi = rdir.Phi();
 
-          // if(tangle*TMath::Cos(cphi)<0) continue;
           fChRing->Fill(tangle * TMath::Sin(cphi), tangle * TMath::Cos(cphi));
-          // fChRing->Fill(tangle * TMath::Sin(cphi), -tangle *
-          // TMath::Cos(cphi));
-          glob_gr.SetPoint(glob_i, tangle * TMath::Sin(cphi),
-                           tangle * TMath::Cos(cphi));
+          glob_gr.SetPoint(glob_i, tangle * TMath::Sin(cphi), tangle * TMath::Cos(cphi));
           glob_i++;
-
         } else {
           fTimeDiff->Fill(hittime, tdiff);
-          hthetac[pid]->Fill(tangle);
+	        hthetac[pid]->Fill(tangle);
           hthetacd[pid]->Fill((tangle - fAngle[pid]) * 1000);
           fhChromL->Fill(tdiff / len, (tangle - fAngle[pid]));
           fPmt_a[mcp]->Fill(tangle - fAngle[pid]);
@@ -1518,8 +1516,7 @@ void PrtReco::geom_reco(PrtEvent *event, TVector3 mom, bool ringfit) {
           else
             fPmt_td[mcp]->Fill(tdiff);
 
-          if (fabs(tangle - fAngle[fp2]) > 0.05 &&
-              fabs(tangle - fAngle[fp1]) > 0.05)
+          if (fabs(tangle - fAngle[fp2]) > 0.05 && fabs(tangle - fAngle[fp1]) > 0.05)
             continue;
 
           isGoodHit_gr = true;
@@ -1554,17 +1551,19 @@ void PrtReco::time_imaging(PrtEvent *event) {
   int pid = event->getPid();
   double sum1(0), sum2(0), noise(0.5e-5);
   int nph(0);
-
+  TVector3 mom = event->getMomentum().Unit();
   for (auto hit : event->getHits()) {
 
     double t = hit.getLeadTime() + gRandom->Gaus(0, fTimeRes);
     int mcp = hit.getPmt();
     int pix = hit.getPixel();
     int ch = hit.getChannel();
+     TVector3 hitMomentum = hit.getMomentum().Unit();
+        double tangle = mom.Angle(hitMomentum);
+
 
     if (fMethod == 2) {
       nph++;
-
       double lh1 = fTime[fp1][ch]->GetBinContent(fTime[fp1][ch]->FindBin(t));
       double lh2 = fTime[fp2][ch]->GetBinContent(fTime[fp2][ch]->FindBin(t));
       // double lh1 = fPdf[fp1][ch]->Eval(t);
@@ -1612,9 +1611,11 @@ void PrtReco::time_imaging(PrtEvent *event) {
       fTotal[pid]++;
       fTime[pid][ch]->Fill(t, w);
     }
+   
+   hthetac_ti[pid]->Fill(tangle);
+   hthetacd_ti[pid]->Fill((tangle - fAngle[pid]) * 1000);
   }
-
-  double sum_nph = 0;
+   double sum_nph = 0;
 
   if (nph > 1)
     hnph_ti[pid]->Fill(nph);
